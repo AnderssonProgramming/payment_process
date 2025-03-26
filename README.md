@@ -100,7 +100,29 @@ Se generaron las pruebas para el correcto funcionamiento de las clases o interfa
 # AZURE
 
 Se configura el ambiente de CI-CD en actions de git, así como, añadir el secret para que despliegue en Azure correctamente.
+![alt text](image-11.png)
+
+![alt text](image-12.png)
+
+Ya se desplegó en Azure
+
+![alt text](image-13.png)
+https://fetch-ewfzgrefd4afhdbd.canadacentral-01.azurewebsites.net/
 
 
+# REACT
 
+Ahora, se muestra la implementación del CRUD para Producto, aunque esta misma implementación está en el otro repo.
+
+![alt text](image-14.png)
+
+Se agregó el producto
+![alt text](image-15.png)
+
+Ahora si se quiere editar algún atributo, pues se hace directamente con el endpoint que maneja el método PATCH
+
+![alt text](image-16.png)
+
+Y ahora con el método DELETE, hay la posibilidad de eliminar un producto ya creado.
+![alt text](image-17.png)
 
