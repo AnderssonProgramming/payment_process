@@ -61,5 +61,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: Fetch       # Reemplaza con el nombre de tu App Service
-          publish-profile: ${{ secrets.AZUREPARTIALUBLISHPROFILE }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C686DDDDF1824304B93F7E49ADA6261F }}
           package: '*.jar'
