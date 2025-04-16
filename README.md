@@ -1,128 +1,273 @@
-# payment_process
-This repository shows the information of a basic payment process CRUD.
+# 💳 ECICredit – Sistema de Procesamiento de Pagos
 
-# DESCRIPCIÓN
+## 🧱 Arquitectura General
 
-## PARCIAL CICLO VIDA DEL DESARROLLO DE SOFTWARE SEGUNDO TERCIO (CVDS)
-Una importante empresa del sector de ventas ha decidido trabajar con un proveedor
-de pagos externo llamado ECICredit por lo tanto, ha decidido contratarlo para que
-sea el ingeniero de software que aplique este MVP de la primera versión.
-El proceso de pago es el siguiente:
-Un usuario ingresa la información necesaria de la compra, agregando los productos
-de su interés, si los campos no cumplen con las restricciones la solicitud queda
-declinada, por el contrario si pasa la primera validación el proceso lo deja aprobado
-y guarda el Pago con toda la información necesaria y su estado.
-El usuario una vez tiene registrado su pago puede consultarlo por el identificador del
-usuario para que el pueda ver sus pagos acreditados.
-Criterios de Aceptación y Restricciones:
+Este proyecto fue diseñado siguiendo los principios del ciclo de vida del desarrollo de software, usando una arquitectura modular y orientada a servicios. A continuación, se describen los principales elementos:
 
-- Es Necesario pedirle al usuario la información del detalle del pago como los
-artículos que está comprando junto a su valor unitario y la cantidad de ese
-artículo y la fecha de compra.
+### 🧩 Diagrama de Componentes
 
-- El valor total de la transacción es el valor de todos los artículos sumados, si
-no coincide debe generar una excepción informativa al usuario.
+- **React**: Interfaz de usuario para registrar y consultar pagos.
+- **Spring Boot**: Backend que expone servicios REST para gestionar pagos.
+- **MongoDB**: Base de datos NoSQL donde se persisten las transacciones.
 
-- El usuario al finalizar el pago desea saber toda la información de la orden
-relacionado con el monto total, su número de transacción, junto a la
-respuesta obtenida, en caso de error, debe adjuntar a la data transaccional el
-mensaje de respuesta de la solicitud y el estatus de declinado o aprobado.
+![alt text](assets/image.png)
 
-- El usuario necesita ingresar las fechas en formato DD-MM-YYYY.
+---
 
-# SPRING INITIALIZR
-![alt text](image.png)
+### 🧩 Diagrama de Clases
 
-# DIAGRAMA DE COMPONENTES
+![alt text](assets/image-1.png)
 
-Un diagrama de componentes estructurado con la lógica de negocio de este parcial, donde el pago es procesado de acuerdo al usuario mediante HTTP Request con MongoDB, al no manejar tablas, sino todo con bases de datos no relacionales.
-![alt text](image-1.png)
+---
 
+## 🧱 Estructura de Arquitectura por Capas
 
-# DIAGRAMA DE CLASES
+Este proyecto está construido siguiendo una **arquitectura multicapa tradicional**, que favorece la separación de responsabilidades, testeo y escalabilidad. Las capas implementadas son:
 
-Basado en los requisitos del parcial, y suponiendo que ya existe el usuario, solo este tiene el pago asociado de varios productos, así que en el diagrama de clases se evidencia las diferentes capas, model, repository, controller, DTO, service.
+### 📦 1. Modelo (`model`)
 
+Clases que representan la estructura de la transacción y los artículos:
 
-![alt text](Elysium_Class_Diagram-1.png)
+```java
+class Payment {
+  String userId;
+  List<PaymentItem> items;
+  double totalAmount;
+  String transactionId;
+  PaymentStatus status;
+  String errorMessage;
+  Date paymentDate;
+}
+```
 
+- `PaymentItem`: contiene nombre del producto, precio unitario, cantidad y fecha de compra.
+- `PaymentStatus`: Enum con valores `APROBADO`, `DECLINADO`.
 
-# IMPLEMENTACIÓN
+---
 
-## Dependencias
-Se agregan en el pom.xml las dependencias necesarias para la documentación en Swagger de los endpoints y también para el reporte de JACOCO
+### 🧰 2. DTO (Data Transfer Object)
 
-![alt text](image-2.png)
+Clases que **reciben y devuelven datos** en la API, desacopladas del modelo de base de datos:
 
+- `PaymentRequestDTO`: estructura del pago que llega desde el frontend.
+- `PaymentResponseDTO`: estructura de la respuesta enviada al cliente.
+- `PaymentItemDTO`: representa cada artículo del pago.
 
-Se crea toda la arquitectura para Pago y Product, evidenciando el buen funcionamiento con MongoDb al poder hacer eL CRUD para producto, para luego mostrarlo en la interfaz con REACT.
+> Esto evita exponer internamente el modelo de dominio y permite validar formatos y campos específicos (como la fecha `DD-MM-YYYY`).
 
-- POST
+---
 
-![alt text](image-3.png)
+### ⚙️ 3. Servicio (`service`)
 
-- GET
-Lista de productos
-![alt text](image-4.png)
+Encapsula la **lógica de negocio**. Valida los datos, calcula el total, lanza excepciones, aprueba o rechaza la transacción y la guarda.
 
-Por id de Producto
-![alt text](image-5.png)
+```java
+if (calculatedTotal != request.getTotalAmount()) {
+  throw new PaymentException("Total incorrecto.");
+}
+```
 
-- PATCH
+- Procesa pagos con `processPayment()`
+- Consulta pagos con `getPaymentsByUserId()`
 
-![alt text](image-6.png)
+---
 
-Volver con el GET para revisar el cambio
-![alt text](image-7.png)
+### 🧮 4. Repositorio (`repository`)
 
+Capa encargada de hablar con la base de datos usando Spring Data MongoDB:
 
-- DELETE
+```java
+interface PaymentRepository extends MongoRepository<Payment, String> {
+  List<Payment> findByUserId(String userId);
+}
+```
 
-![alt text](image-8.png)
+---
 
-Se verifica con el GET, mandando error 404 por lo que ese Producto ya no existe.
+### 🌐 5. Controlador (`controller`)
 
-![alt text](image-9.png)
+Exposición de la API REST:
 
+```java
+@PostMapping
+public PaymentResponseDTO createPayment(@RequestBody PaymentRequestDTO request) { ... }
 
+@GetMapping("/{userId}")
+public List<PaymentResponseDTO> getPayments(@PathVariable String userId) { ... }
+```
 
-Como otra parte de implementación, se generó la documentación en Swagger para cada endpoint.
-Cuando se ejecuta mvn spring-boot:run, con esta URL se ve la documentación: http://localhost:8080/swagger-ui/index.html#/
+Incluye configuración `@CrossOrigin` para permitir conexiones desde React (`localhost:3000` o desde Azure).
 
-![alt text](image-10.png)
+---
 
+## 🚀 ¿Cómo correr el proyecto localmente?
 
-# TESTS
+### Requisitos
 
-Se generaron las pruebas para el correcto funcionamiento de las clases o interfaces.
+- Java 17+
+- Maven 3+
+- MongoDB local o conexión a MongoDB Atlas
 
+### Instrucciones
 
-# AZURE
+```bash
+git clone https://github.com/AnderssonProgramming/payment_process.git
+cd ecicredit-payments
+mvn clean install
+mvn spring-boot:run
+```
 
-Se configura el ambiente de CI-CD en actions de git, así como, añadir el secret para que despliegue en Azure correctamente.
-![alt text](image-11.png)
+Aplicación disponible en: [http://localhost:8080](http://localhost:8080)
 
-![alt text](image-12.png)
+---
 
-Ya se desplegó en Azure
+## 🛠️ Tecnologías Usadas
 
-![alt text](image-13.png)
-https://fetch-ewfzgrefd4afhdbd.canadacentral-01.azurewebsites.net/
+| Capa        | Tecnología                  |
+|-------------|-----------------------------|
+| Backend     | Java 17, Spring Boot        |
+| Base Datos  | MongoDB Atlas               |
+| Frontend    | React.js, Styled Components|
+| DevOps      | GitHub Actions, Azure App Service |
+| Testing     | JUnit, Mockito, Jacoco      |
+| CI/CD       | GitHub Actions              |
+| Despliegue  | Azure (servicio App)        |
 
+---
 
-# REACT
+## 📦 Métodos del API
 
-Ahora, se muestra la implementación del CRUD para Producto, aunque esta misma implementación está en el otro repo.
+### `POST /api/payments`
 
-![alt text](image-14.png)
+**Descripción:** Procesa un nuevo pago.
 
-Se agregó el producto
-![alt text](image-15.png)
+**Cuerpo esperado:**
 
-Ahora si se quiere editar algún atributo, pues se hace directamente con el endpoint que maneja el método PATCH
+```json
+{
+  "userId": "usuario123",
+  "items": [
+    {
+      "productName": "Teclado Mecánico",
+      "unitPrice": 150.0,
+      "quantity": 2,
+      "purchaseDate": "15-04-2025"
+    }
+  ]
+}
+```
 
-![alt text](image-16.png)
+**Respuesta:**
 
-Y ahora con el método DELETE, hay la posibilidad de eliminar un producto ya creado.
-![alt text](image-17.png)
+```json
+{
+  "transactionId": "ABC123XYZ",
+  "status": "APROBADO",
+  "message": "Pago procesado con éxito",
+  "totalAmount": 300.0
+}
+```
 
+---
+
+### `GET /api/payments/{userId}`
+
+**Descripción:** Consulta todos los pagos registrados por un usuario.
+
+**Respuesta:**
+
+```json
+[
+  {
+    "transactionId": "ABC123XYZ",
+    "status": "APROBADO",
+    "totalAmount": 300.0,
+    "items": [...],
+    "message": "Pago procesado con éxito"
+  }
+]
+```
+
+![alt text](assets/image-4.png)
+
+![alt text](assets/image-9.png)
+
+---
+
+## 🧪 Pruebas Unitarias
+
+- Pruebas unitarias desarrolladas con **JUnit** y **Mockito**
+- Cobertura mínima garantizada del **80%** usando **Jacoco**
+- Casos cubiertos:
+  - Validación de fechas (formato `DD-MM-YYYY`)
+  - Cálculo correcto del total
+  - Manejo de errores y excepciones
+  - Comprobación del flujo de estado `APROBADO`/`DECLINADO`
+
+![alt text](assets/image-2.png)
+
+---
+
+## ⚙️ CI/CD con GitHub Actions
+
+> Despliegue automático al hacer push en `main`
+
+### Flujo
+
+1. Build de backend
+2. Ejecución de pruebas con Jacoco
+3. Despliegue automático a Azure Web App
+
+![alt text](assets/image-3.png)
+
+---
+
+## 🌐 Frontend con React
+
+- Interfaz amigable y colorida con Styled Components
+- Registro de pagos en formularios dinámicos
+- Validación de campos (fecha, precio, cantidad)
+- Consulta de pagos con botón interactivo
+- Reinicio del formulario al registrar cada pago
+
+### Correr localmente
+
+```bash
+npm install
+npm start
+```
+
+Aplicación disponible en: [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 📸 Evidencias
+
+> - Registro exitoso de pago ✅
+> - Validación de errores ❌
+> - Consulta de historial interactiva 📄
+
+![alt text](assets/image-6.png)
+![alt text](assets/image-7.png)
+![alt text](assets/image-8.png)
+
+---
+
+## ✅ Checklist del Parcial
+
+✔️ Diseño de arquitectura  
+✔️ Métodos `pagar` y `consultar`  
+✔️ Persistencia en MongoDB  
+✔️ Pruebas unitarias (80% cobertura)  
+✔️ CI/CD con GitHub Actions  
+✔️ Backend desplegado en Azure  
+✔️ Frontend con React y buena UX  
+✔️ README completo con instrucciones y evidencias
+
+---
+
+## 👨‍💻 Autor
+
+**Desarrollado por:**  
+Andersson David Sánchez Méndez
+Ingeniero de Sistemas – ECICredit MVP V1
