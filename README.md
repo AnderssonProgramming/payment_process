@@ -112,7 +112,7 @@ Incluye configuración `@CrossOrigin` para permitir conexiones desde React (`loc
 
 ```bash
 git clone https://github.com/AnderssonProgramming/payment_process.git
-cd ecicredit-payments
+cd payment_process
 mvn clean install
 mvn spring-boot:run
 ```
